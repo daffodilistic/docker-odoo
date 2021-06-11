@@ -1,46 +1,67 @@
-FROM debian:jessie
-LABEL maintainer="Odoo S.A. <info@odoo.com>"
+FROM ubuntu:xenial
+LABEL maintainer="Soh Thiam Hing <daffodilistic@gmail.com>"
 
 # Install some deps, lessc and less-plugin-clean-css, and wkhtmltopdf
+ENV DEBIAN_FRONTEND=noninteractive
 RUN set -x; \
         apt-get update \
         && apt-get install -y --no-install-recommends \
             ca-certificates \
             curl \
             dirmngr \
+            git \
             node-less \
+            postgresql-client \
             python-gevent \
             python-ldap \
             python-pip \
             python-qrcode \
             python-renderpm \
-            python-support \
             python-vobject \
             python-watchdog \
-        && curl -o wkhtmltox.deb -sSL https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.5/wkhtmltox_0.12.5-1.jessie_amd64.deb \
-        && echo '4d104ff338dc2d2083457b3b1e9baab8ddf14202 wkhtmltox.deb' | sha1sum -c - \
+            python-setuptools \
+# Odoo deps
+            python-babel \
+            python-decorator \
+            python-docutils \
+            python-feedparser \
+            # python-pil \
+            python-imaging \
+            python-jinja2 \
+            python-libxslt1 \
+            python-lxml \
+            python-mako \
+            python-mock \
+            python-openid \
+            python-passlib \
+            python-psutil \
+            python-psycopg2 \
+            python-pychart \
+            python-pydot \
+            python-pyparsing \
+            python-pypdf \
+            # python-pypdf2 \
+            python-reportlab \
+            python-requests \
+            python-suds \
+            python-vatnumber \
+            python-werkzeug \
+            python-xlsxwriter \
+            python-xlwt \
+        && curl -o wkhtmltox.deb -sSL https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.xenial_arm64.deb \
+        # && echo '4d104ff338dc2d2083457b3b1e9baab8ddf14202 wkhtmltox.deb' | sha1sum -c - \
         && dpkg --force-depends -i wkhtmltox.deb \
         && apt-get -y install -f --no-install-recommends \
         && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false -o APT::AutoRemove::SuggestsImportant=false npm \
         && rm -rf /var/lib/apt/lists/* wkhtmltox.deb \
-        && pip install psycogreen==1.0
-
-# install latest postgresql-client
-RUN set -x; \
-        echo 'deb http://apt.postgresql.org/pub/repos/apt/ jessie-pgdg main' > etc/apt/sources.list.d/pgdg.list \
-        && export GNUPGHOME="$(mktemp -d)" \
-        && repokey='B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8' \
-        && gpg --batch --keyserver keyserver.ubuntu.com --recv-keys "${repokey}" \
-        && gpg --armor --export "${repokey}" | apt-key add - \
-        && rm -rf "$GNUPGHOME" \
-        && apt-get update  \
-        && apt-get install -y postgresql-client \
-        && rm -rf /var/lib/apt/lists/*
+        && python -m pip install --upgrade "pip<21.0" \
+        && python -m pip install psycogreen==1.0
 
 # Install Odoo
 ENV ODOO_VERSION 10.0
-ARG ODOO_RELEASE=20190816
-ARG ODOO_SHA=397cb4d458cb292edb0432dc8d39a466dce56b65
+ARG ODOO_RELEASE=latest
+ARG ODOO_SHA=db5d5f6fb4141aa62cd8ca6f82d30b27e4393dc5
+USER root
 RUN set -x; \
         curl -o odoo.deb -sSL http://nightly.odoo.com/${ODOO_VERSION}/nightly/deb/odoo_${ODOO_VERSION}.${ODOO_RELEASE}_all.deb \
         && echo "${ODOO_SHA} odoo.deb" | sha1sum -c - \
