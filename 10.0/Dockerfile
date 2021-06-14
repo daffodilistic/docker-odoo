@@ -1,8 +1,7 @@
-FROM ubuntu:xenial
+FROM arm64v8/python:2
 LABEL maintainer="Soh Thiam Hing <daffodilistic@gmail.com>"
 
 # Install some deps, lessc and less-plugin-clean-css, and wkhtmltopdf
-ENV DEBIAN_FRONTEND=noninteractive
 RUN set -x; \
         apt-get update \
         && apt-get install -y --no-install-recommends \
@@ -10,65 +9,39 @@ RUN set -x; \
             curl \
             dirmngr \
             git \
+            libldap2-dev \
+            libsasl2-dev \
+            libssl-dev\
+            libxml2-dev \
+            libxslt-dev \
             node-less \
-            postgresql-client \
-            python-gevent \
-            python-ldap \
-            python-pip \
-            python-qrcode \
-            python-renderpm \
-            python-vobject \
-            python-watchdog \
-            python-setuptools \
-# Odoo deps
-            python-babel \
-            python-decorator \
-            python-docutils \
-            python-feedparser \
-            # python-pil \
-            python-imaging \
-            python-jinja2 \
-            python-libxslt1 \
-            python-lxml \
-            python-mako \
-            python-mock \
-            python-openid \
-            python-passlib \
-            python-psutil \
-            python-psycopg2 \
-            python-pychart \
-            python-pydot \
-            python-pyparsing \
-            python-pypdf \
-            # python-pypdf2 \
-            python-reportlab \
-            python-requests \
-            python-suds \
-            python-vatnumber \
-            python-werkzeug \
-            python-xlsxwriter \
-            python-xlwt \
-        && curl -o wkhtmltox.deb -sSL https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.xenial_arm64.deb \
-        # && echo '4d104ff338dc2d2083457b3b1e9baab8ddf14202 wkhtmltox.deb' | sha1sum -c - \
-        && dpkg --force-depends -i wkhtmltox.deb \
-        && apt-get -y install -f --no-install-recommends \
-        && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false -o APT::AutoRemove::SuggestsImportant=false npm \
-        && rm -rf /var/lib/apt/lists/* wkhtmltox.deb \
-        && python -m pip install --upgrade "pip<21.0" \
-        && python -m pip install psycogreen==1.0
+            python-dev \
+            wkhtmltopdf
 
-# Install Odoo
-ENV ODOO_VERSION 10.0
-ARG ODOO_RELEASE=latest
-ARG ODOO_SHA=db5d5f6fb4141aa62cd8ca6f82d30b27e4393dc5
-USER root
+# Install latest postgresql-client
 RUN set -x; \
-        curl -o odoo.deb -sSL http://nightly.odoo.com/${ODOO_VERSION}/nightly/deb/odoo_${ODOO_VERSION}.${ODOO_RELEASE}_all.deb \
-        && echo "${ODOO_SHA} odoo.deb" | sha1sum -c - \
-        && dpkg --force-depends -i odoo.deb \
-        && apt-get update \
-        && apt-get -y install -f --no-install-recommends \
-        && rm -rf /var/lib/apt/lists/* odoo.deb
+        apt-get install -y --no-install-recommends postgresql-client
+
+# Install Pip  and supporting libraries
+RUN set -x; \
+        curl https://bootstrap.pypa.io/pip/2.7/get-pip.py -o get-pip.py \
+        && python get-pip.py "pip<21.0" \
+        && pip install wheel
+
+# Create odoo user
+RUN useradd -ms /bin/bash odoo
+
+# Install Odoo from source
+ARG ODOO_VERSION=10.0
+RUN mkdir -p /mnt/odoo \
+        && chown -R odoo /mnt/odoo
+RUN set -x; \
+        git clone --branch 10.0 --depth 1 https://github.com/odoo/odoo.git /mnt/odoo
+RUN set -x; \
+        python -m pip install -r /mnt/odoo/requirements.txt
+
+# Create symlink
+RUN ln -s /mnt/odoo/odoo-bin /usr/bin/odoo
 
 # Copy entrypoint script and Odoo configuration file
 COPY ./entrypoint.sh /
