@@ -1,4 +1,5 @@
-FROM arm64v8/python:2
+ARG ARCH=
+FROM ${ARCH}python:2
 LABEL maintainer="Soh Thiam Hing <daffodilistic@gmail.com>"
 
 # Install some deps, lessc and less-plugin-clean-css, and wkhtmltopdf
