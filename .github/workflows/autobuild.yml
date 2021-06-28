@@ -26,4 +26,4 @@ jobs:
           context: "./10.0"
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: daffodilistic/odoo:10.0:latest
+          tags: daffodilistic/odoo:10.0
