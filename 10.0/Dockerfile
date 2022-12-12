@@ -17,7 +17,7 @@ RUN set -x; \
             libxslt-dev \
             node-less \
             python-dev \
-            wkhtmltopdf
+            wkhtmltopdf=0.12.5-1
 
 # Install latest postgresql-client
 RUN set -x; \
